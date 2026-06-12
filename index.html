@@ -708,8 +708,10 @@ function makeMarker(wf, color, borderColor, accessLine, distToCenter, osmUrl) {
     html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2.5px solid ${borderColor};box-shadow:0 1px 3px rgba(0,0,0,0.25);cursor:default"></div>`,
     className: '', iconAnchor: [7,7]
   });
+  const heightVal = parseFloat(wf.tags.height);
+  const heightLine = !isNaN(heightVal) ? `Height: <b>${heightVal} m</b><br>` : '';
   const popupHtml =
-    `<b>${wf.name}</b><br>${accessLine}<br>` +
+    `<b>${wf.name}</b><br>${heightLine}${accessLine}<br>` +
     `<span style="color:#888;font-size:11px">${distToCenter} km from ${centerName}</span><br>` +
     `<a href="${osmUrl}" target="_blank">View on OpenStreetMap ↗</a>`;
 
@@ -793,7 +795,7 @@ initMap();
     <ul>
       <li>All data is fetched live from <a href="https://www.openstreetmap.org" target="_blank">OpenStreetMap</a> via the Overpass API. Coverage varies by region.</li>
     </ul>
-    <div id="help-version">Waterfall Explorer — v1.7</div>
+    <div id="help-version">Waterfall Explorer — v1.8</div>
     <button id="help-close">Close</button>
   </div>
 </div>
