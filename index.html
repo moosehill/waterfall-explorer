@@ -149,12 +149,6 @@
   .action { padding: 7px 20px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; }
   #locate-btn { border: 1px solid #d0d0d0; background: #fff; color: #333; }
   #locate-btn:hover { background: #f5f5f5; }
-  #gps-btn {
-    border: 1px solid #d0d0d0; background: #fff; color: #333;
-    padding: 7px 12px; font-size: 15px; line-height: 1;
-  }
-  #gps-btn:hover { background: #f5f5f5; }
-  #gps-btn.active { border-color: #1a73e8; background: #e8f0fe; }
   #search-btn { border: 1px solid #1a73e8; background: #1a73e8; color: #fff; }
   #search-btn:hover { background: #1558b0; }
   #search-btn.trail-mode { border-color: #2e7d32; background: #2e7d32; }
@@ -173,7 +167,25 @@
   .dot.err { background: #ea4335; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-  #map { flex: 1; min-height: 0; }
+  #map { flex: 1; min-height: 0; position: relative; }
+
+  /* ── "My location" map control ── */
+  .locate-control {
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 1px 5px rgba(0,0,0,0.3);
+    width: 34px; height: 34px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+  .locate-control:hover { background: #f5f5f5; }
+  .locate-control svg { width: 20px; height: 20px; }
+  .locate-control.active svg circle.lc-dot { fill: #1a73e8; }
+  .locate-control.active svg g.lc-cross { stroke: #1a73e8; }
+  .locate-control:not(.active) svg circle.lc-dot { fill: #555; }
+  .locate-control:not(.active) svg g.lc-cross { stroke: #555; }
+  .locate-control.pulsing svg circle.lc-dot { animation: lc-pulse 1s infinite; }
+  @keyframes lc-pulse { 0%,100%{opacity:1} 50%{opacity:0.25} }
 
   /* ── Footer / legend ── */
   #footer {
@@ -232,7 +244,6 @@
     <label>Search location</label>
     <input type="text" id="location-input" placeholder="e.g. Vík, Iceland" value="Vík, Iceland" />
     <button id="locate-btn" class="action">Locate</button>
-    <button id="gps-btn" class="action" title="Use my current location">📍</button>
     <span id="geocode-status">Vík, Iceland (default)</span>
   </div>
 
@@ -359,6 +370,30 @@ function initMap() {
     document.getElementById('geocode-status').textContent = 'Selected from map';
     drawRadius();
   });
+
+  // "My location" map control — crosshair with center dot
+  const LocateControl = L.Control.extend({
+    options: { position: 'topleft' },
+    onAdd: function() {
+      const el = L.DomUtil.create('div', 'locate-control');
+      el.title = 'Use my current location';
+      el.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+          <g class="lc-cross" stroke="#555">
+            <line x1="12" y1="2"  x2="12" y2="6"/>
+            <line x1="12" y1="18" x2="12" y2="22"/>
+            <line x1="2"  y1="12" x2="6"  y2="12"/>
+            <line x1="18" y1="12" x2="22" y2="12"/>
+            <circle cx="12" cy="12" r="7"/>
+          </g>
+          <circle class="lc-dot" cx="12" cy="12" r="2.5" fill="#555" stroke="none"/>
+        </svg>`;
+      L.DomEvent.disableClickPropagation(el);
+      L.DomEvent.on(el, 'click', () => useMyLocation(el));
+      return el;
+    }
+  });
+  map.addControl(new LocateControl());
 
   // Init popup element (must be after DOM ready)
   popup = document.getElementById('wf-popup');
@@ -494,14 +529,12 @@ async function locatePlace() {
 }
 
 // ── Use device GPS location ──
-function useMyLocation() {
+function useMyLocation(controlEl) {
   if (!navigator.geolocation) {
     document.getElementById('geocode-status').textContent = 'Geolocation not supported on this device';
     return;
   }
-  const btn = document.getElementById('gps-btn');
-  btn.disabled = true;
-  btn.classList.add('active');
+  controlEl.classList.add('pulsing');
   document.getElementById('geocode-status').textContent = 'Locating you…';
 
   navigator.geolocation.getCurrentPosition(
@@ -512,7 +545,8 @@ function useMyLocation() {
       document.getElementById('geocode-status').textContent = 'Using your current location';
       map.setView(CENTER, 11);
       drawRadius();
-      btn.disabled = false;
+      controlEl.classList.remove('pulsing');
+      controlEl.classList.add('active');
     },
     function(err) {
       let msg = 'Could not get location';
@@ -520,8 +554,7 @@ function useMyLocation() {
       else if (err.code === err.POSITION_UNAVAILABLE) msg = 'Location unavailable';
       else if (err.code === err.TIMEOUT) msg = 'Location request timed out';
       document.getElementById('geocode-status').textContent = msg;
-      btn.disabled = false;
-      btn.classList.remove('active');
+      controlEl.classList.remove('pulsing');
     },
     { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
   );
@@ -712,7 +745,6 @@ document.getElementById('trail-m').addEventListener('input', () => {
 });
 document.getElementById('search-btn').addEventListener('click', search);
 document.getElementById('locate-btn').addEventListener('click', locatePlace);
-document.getElementById('gps-btn').addEventListener('click', useMyLocation);
 document.getElementById('location-input').addEventListener('keydown', e => { if (e.key==='Enter') locatePlace(); });
 
 // ── Help modal ──
@@ -743,6 +775,7 @@ initMap();
     <ul>
       <li>Type any place name in the <b>Search location</b> box and press Enter or click <b>Locate</b>.</li>
       <li>Or click anywhere on the map to move the search center to that point.</li>
+      <li>Or tap the <b>crosshair button</b> in the top-left of the map to center on your current GPS location (requires location permission).</li>
     </ul>
     <h3>Sliders</h3>
     <ul>
