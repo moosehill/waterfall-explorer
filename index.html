@@ -610,7 +610,7 @@ async function search() {
     const usedParkingSet = new Set();
 
     for (const wf of waterfalls) {
-      const osmUrl = `https://www.openstreetmap.org/${wf.osmType}/${wf.osmId}`;
+      const osmUrl = `https://www.openstreetmap.org/?mlat=${wf.pos[0]}&mlon=${wf.pos[1]}#map=17/${wf.pos[0]}/${wf.pos[1]}`;
       const distToCenter = (haversine(CENTER[0], CENTER[1], wf.pos[0], wf.pos[1]) / 1000).toFixed(1);
 
       if (isPark) {
