@@ -149,6 +149,12 @@
   .action { padding: 7px 20px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; }
   #locate-btn { border: 1px solid #d0d0d0; background: #fff; color: #333; }
   #locate-btn:hover { background: #f5f5f5; }
+  #gps-btn {
+    border: 1px solid #d0d0d0; background: #fff; color: #333;
+    padding: 7px 12px; font-size: 15px; line-height: 1;
+  }
+  #gps-btn:hover { background: #f5f5f5; }
+  #gps-btn.active { border-color: #1a73e8; background: #e8f0fe; }
   #search-btn { border: 1px solid #1a73e8; background: #1a73e8; color: #fff; }
   #search-btn:hover { background: #1558b0; }
   #search-btn.trail-mode { border-color: #2e7d32; background: #2e7d32; }
@@ -226,6 +232,7 @@
     <label>Search location</label>
     <input type="text" id="location-input" placeholder="e.g. Vík, Iceland" value="Vík, Iceland" />
     <button id="locate-btn" class="action">Locate</button>
+    <button id="gps-btn" class="action" title="Use my current location">📍</button>
     <span id="geocode-status">Vík, Iceland (default)</span>
   </div>
 
@@ -486,6 +493,40 @@ async function locatePlace() {
   }
 }
 
+// ── Use device GPS location ──
+function useMyLocation() {
+  if (!navigator.geolocation) {
+    document.getElementById('geocode-status').textContent = 'Geolocation not supported on this device';
+    return;
+  }
+  const btn = document.getElementById('gps-btn');
+  btn.disabled = true;
+  btn.classList.add('active');
+  document.getElementById('geocode-status').textContent = 'Locating you…';
+
+  navigator.geolocation.getCurrentPosition(
+    function(pos) {
+      CENTER = [pos.coords.latitude, pos.coords.longitude];
+      centerName = `${CENTER[0].toFixed(5)}, ${CENTER[1].toFixed(5)}`;
+      document.getElementById('location-input').value = centerName;
+      document.getElementById('geocode-status').textContent = 'Using your current location';
+      map.setView(CENTER, 11);
+      drawRadius();
+      btn.disabled = false;
+    },
+    function(err) {
+      let msg = 'Could not get location';
+      if (err.code === err.PERMISSION_DENIED) msg = 'Location permission denied';
+      else if (err.code === err.POSITION_UNAVAILABLE) msg = 'Location unavailable';
+      else if (err.code === err.TIMEOUT) msg = 'Location request timed out';
+      document.getElementById('geocode-status').textContent = msg;
+      btn.disabled = false;
+      btn.classList.remove('active');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+  );
+}
+
 // ── Search ──
 async function search() {
   const radiusKm   = +document.getElementById('radius-km').value;
@@ -671,6 +712,7 @@ document.getElementById('trail-m').addEventListener('input', () => {
 });
 document.getElementById('search-btn').addEventListener('click', search);
 document.getElementById('locate-btn').addEventListener('click', locatePlace);
+document.getElementById('gps-btn').addEventListener('click', useMyLocation);
 document.getElementById('location-input').addEventListener('keydown', e => { if (e.key==='Enter') locatePlace(); });
 
 // ── Help modal ──
