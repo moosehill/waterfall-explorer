@@ -110,7 +110,7 @@ A modern browser with JavaScript enabled. No server, no backend, no API keys req
 
 **Waterfall Explorer** was designed by the repository owner and coded by [Claude](https://claude.ai) (Anthropic), via an iterative conversation-driven development process.
 
-Repository owner has manually examine this code and ascertained that it accesses only expected servers: Overpass servers for geographic queries, Openstreetmap for map and feature data, and unpkg.com (Open-source CDN) for access to Leaflet.
+Repository owner has manually examined this code and ascertained that it accesses only expected servers: Overpass servers for geographic queries, Openstreetmap for map and feature data, and unpkg.com (Open-source CDN) for access to Leaflet.
 
 ---
 
